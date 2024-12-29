@@ -3,7 +3,11 @@ import './App.scss';
 import { peopleFromServer } from './data/people';
 import { Person } from './types/Person';
 
-export const App: React.FC = () => {
+type Props = {
+  delay?: number;
+}
+
+export const App: React.FC<Props> = ({ delay = 300 }) => {
   const [query, setQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -13,10 +17,15 @@ export const App: React.FC = () => {
   const timer = useRef(0);
 
   const filteredPeople = useMemo(() => {
-    return peopleFromServer.filter(people =>
-      people.name.toLowerCase().includes(appliedQuery.toLowerCase()),
-    );
-  }, [appliedQuery]);
+    const trimmedQuery = appliedQuery.trim();
+
+  if (trimmedQuery === '') {
+    return peopleFromServer;
+  }
+  return peopleFromServer.filter(people =>
+    people.name.toLowerCase().includes(trimmedQuery.toLowerCase())
+  );
+}, [appliedQuery]);
 
   const handleQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -26,7 +35,8 @@ export const App: React.FC = () => {
 
     timer.current = window.setTimeout(() => {
       setAppliedQuery(event.target.value);
-    }, 300);
+    }, delay);
+    setShowSuggestions(true);
   };
 
   const handleSuggestionClick = (people: Person) => {
@@ -65,7 +75,7 @@ export const App: React.FC = () => {
             />
           </div>
 
-          {showSuggestions && (
+          {showSuggestions && filteredPeople.length > 0 && (
             <div
               className="dropdown-menu"
               role="menu"
@@ -76,7 +86,7 @@ export const App: React.FC = () => {
                   <div
                     className="dropdown-item"
                     data-cy="suggestion-item"
-                    key={index}
+                    key={people.slug}
                     onClick={() => {
                       handleSuggestionClick(people);
                     }}
